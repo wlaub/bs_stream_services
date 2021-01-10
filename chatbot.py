@@ -41,9 +41,12 @@ class SpeechSnippet():
 
     def read(self, text, **kwargs):
         if len(text) == 0: return
+        max_length = kwargs.pop('max_length', None)
 
         gTTS(text, **kwargs).save('temp.mp3')
         clip = AudioSegment.from_mp3('temp.mp3')
+        if max_length != None:
+            clip = clip[:1000*max_length]
 
         return clip
 
@@ -54,6 +57,8 @@ class SpeechSnippet():
     def play(self, **kwargs):
         if self.kind == 'text':
             return self.read(self.data, **kwargs)
+        elif self.kind == 'ctext':
+            return self.read(self.data['text'], max_length = self.data['max_length'], **kwargs)
         elif self.kind =='emote':
             if self.data['text'] in self.emote_map.keys():
                 filename = self.emote_map[self.data['text']]  
@@ -73,6 +78,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     max_word_length = 30 #in characters
     max_message_duration = 30 # in seconds
+    say_names = True
 
     def __init__(self, username, client_id, token, channel, user_configs):
         self.client_id = client_id
@@ -94,6 +100,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.user_configs_file = user_configs
         self.user_configs = json.load(open(self.user_configs_file, 'r'))
         self.configs_changed = False
+
+        self.last_speaker = 0
 
     def save_configs(self):
         print('* Saved configs')
@@ -214,6 +222,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         msg = f'{msg}'
 
+#        if user != self.last_speaker:
+#            msg = f'{speaker}: {msg}'
+
         url_re = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
         msg = re.sub(url_re, self.tts_subs['url'], msg)
 
@@ -227,6 +238,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         msg = ' '.join(subs)
 
         snippets = self.split_emotes(msg, tags)
+
+        if user != self.last_speaker and self.say_names:
+            snippets.insert(0, SpeechSnippet('ctext', {'text': speaker, 'max_length':1}))
 
         print(snippets)
         abort = False
@@ -259,6 +273,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 lang = self.get_user_config(tags, 'lang', 'en')               
                 self.speak_text(snippets, lang=lang, tags=tags)
 
+            self.last_speaker = tags['user-id']
         except Exception as exc:
             print(f'Failed to process message {e}\n\n{exc}')
         print(flush=True)
@@ -326,7 +341,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             else:
                 helptext = []
                 helptext.append('TTS Commands:')
-                helptext.append('* lang [2-character language code]')
+                helptext.append('* lang [language code]')
                 c.privmsg(self.channel, ' '.join(helptext))
             
 
