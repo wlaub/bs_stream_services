@@ -86,7 +86,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         # Create IRC bot connection
         server = 'irc.chat.twitch.tv'
         port = 6667
-        print('Connecting to ' + server + ' on port ' + str(port) + '...')
+        print('Connecting to ' + server + ' on port ' + str(port) + '...', flush=True)
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:'+token)], username, username)
 
         self.user_configs_file = user_configs
@@ -251,6 +251,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         except Exception as exc:
             print(f'Failed to process message {e}\n\n{exc}')
+        print(flush=True)
         return
 
     def get_user_id(self, display_name):
