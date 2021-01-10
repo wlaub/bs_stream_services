@@ -24,6 +24,8 @@ from gtts import gTTS
 
 from pydub import AudioSegment
 from pydub.playback import play
+import pydub.effects as fx
+import pydub.playback as playback
 
 class SpeechSnippet():
     mute_emotes = False
@@ -121,6 +123,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             if b in ['broadcaster', 'admin', 'moderator']:
                 return True
 
+    def check_highlighted(self, tags):
+        return tags.get('msg-id', None) == 'highlighted-message'
+
     def parse_emotes(self, emotes):
         result = []
         kinds = emotes.split('/')
@@ -168,7 +173,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return result
 
 
-    def speak_text(self, snippets, reverse=False, fade=False, **kwargs):
+    def speak_text(self, snippets, reverse=False, fade=False, echo=False, tags={}, **kwargs):
         clip = AudioSegment.empty()
         for snippet in snippets:
             tclip = snippet.play(**kwargs)
@@ -180,6 +185,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             clip = clip.reverse()
         if fade:
             clip = clip.fade_out(int(clip.duration_seconds*1000))
+
+        if self.check_highlighted(tags):
+            clip = fx.speedup(clip)
+            clip = fx.low_pass_filter(clip, 500)
+
         play(clip)
         return True
 
@@ -247,7 +257,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 msg = e.arguments[0]
                 snippets = self.filter_text(msg, tags)
                 lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, lang=lang)
+                self.speak_text(snippets, lang=lang, tags=tags)
 
         except Exception as exc:
             print(f'Failed to process message {e}\n\n{exc}')
@@ -307,12 +317,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 msg = ' '.join(args)
                 snippets = self.filter_text(msg, tags)
                 lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, reverse=True, lang=lang)
+                self.speak_text(snippets, reverse=True, lang=lang, tags=tags)
             elif subcmd == 'fade':
                 msg = ' '.join(args)
                 snippets = self.filter_text(msg, tags)
                 lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, fade=True, lang=lang)
+                self.speak_text(snippets, fade=True, lang=lang, tags=tags)
             else:
                 helptext = []
                 helptext.append('TTS Commands:')
