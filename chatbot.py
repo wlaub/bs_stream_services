@@ -319,15 +319,18 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 args = args[1:]
             is_mod = self.check_mod(tags)
             if subcmd == 'lang':
-                try:
-                    newlang = args[0]
-                    self.check_lang(newlang)
-                    self.set_user_config(tags, 'lang', newlang)
-                    c.privmsg(self.channel, f'Language set to {newlang}')
-                except ValueError as exc:
-                    c.privmsg(self.channel, str(exc))
-                except IndexError as exc:
-                    c.privmsg(self.channel, 'usage: lang [language]')
+                if len(args) == 0:
+                    c.privmsg(self.channel, f'Current language: {self.get_user_config(tags, "lang")}')
+                else:
+                    try:
+                        newlang = args[0]
+                        self.check_lang(newlang)
+                        self.set_user_config(tags, 'lang', newlang)
+                        c.privmsg(self.channel, f'Language set to {newlang}')
+                    except ValueError as exc:
+                        c.privmsg(self.channel, str(exc))
+                    except IndexError as exc:
+                        c.privmsg(self.channel, 'usage: lang [language]')
             elif subcmd == 'rev':
                 msg = ' '.join(args)
                 snippets = self.filter_text(msg, tags)
