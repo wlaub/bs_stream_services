@@ -1,4 +1,6 @@
 '''
+Based on https://github.com/twitchdev/chatbot-python-sample
+
 Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
@@ -324,8 +326,9 @@ def main():
         exit(1)
 
     username = secrets.username
-    client_id = secrets.client_id
-    token = secrets.token
+    client_id = secrets.client_id #Obtained by creating a twitch API app and getting its key. Does not include the 'oauth' part
+    token = secrets.token #http://twitchapps.com/tmi/
+
     channel = sys.argv[1]
 
     bot = TwitchBot(username, client_id, token, channel, 'user_configs.json')
