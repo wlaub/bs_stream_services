@@ -18,6 +18,8 @@ import time
 import json
 import re
 
+import secrets
+
 from gtts import gTTS
 
 from pydub import AudioSegment
@@ -166,7 +168,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return result
 
 
-    def speak_text(self, snippets, reverse=False, **kwargs):
+    def speak_text(self, snippets, reverse=False, fade=False, **kwargs):
         clip = AudioSegment.empty()
         for snippet in snippets:
             tclip = snippet.play(**kwargs)
@@ -176,6 +178,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return False
         if reverse:
             clip = clip.reverse()
+        if fade:
+            clip = clip.fade_out(int(clip.duration_seconds*1000))
         play(clip)
         return True
 
@@ -303,7 +307,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 snippets = self.filter_text(msg, tags)
                 lang = self.get_user_config(tags, 'lang', 'en')               
                 self.speak_text(snippets, reverse=True, lang=lang)
-           
+            elif subcmd == 'fade':
+                msg = ' '.join(args)
+                snippets = self.filter_text(msg, tags)
+                lang = self.get_user_config(tags, 'lang', 'en')               
+                self.speak_text(snippets, fade=True, lang=lang)
             else:
                 helptext = []
                 helptext.append('TTS Commands:')
