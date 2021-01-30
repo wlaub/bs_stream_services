@@ -17,8 +17,26 @@ class TTS():
     """
     temp_file_path = 'temp.mp3'
 
+    default_configs = { 
+        }
+    #User configuration options info
+    config_options = {
+        #name: {'description': 'text', permissions: [user types]}
+        }
+
     def __init__(self):
         pass
+
+    def get_instance_config(self, config):
+        """
+        Update default configs with permitted configs
+        """
+        instance_config = dict(self.default_configs)
+        for key, val in config.items():
+            if key in self.config_options.keys():
+                instance_config[key] = config[key]
+        return instance_config
+
 
     def render(self, text, config):
         """
@@ -28,23 +46,46 @@ class TTS():
         raise NotImplemented()
 
 class GTTS(TTS):
-    def render(self, text, config={}):
-        gTTS(text, **config).save(self.temp_file_path)
+    default_configs = {
+        'lang': 'en',
+        }
+    config_options = {
+        'lang': {
+            'description': 'The TTS language code',
+            'permissions': [], #not yet implemented
+            }
+    }
+
+
+    def render(self, text, config = {}):
+        instance_config = self.get_instance_config(config)
+
+        gTTS(text, **instance_config).save(self.temp_file_path)
         clip = AudioSegment.from_mp3(self.temp_file_path)
         return clip 
 
+        
 
 class PyTTSX3(TTS):
+    default_configs = {}
+
+    config_options = {}
+
     def __init__(self):
         self.engine = pyttsx3.init()
 
-    def render(self, text, config = {}):
+    def set_configs(self, config):
         for prop, val in config.items():
             try:
 #                old = self.engine.getProperty(prop)
                 self.engine.setProperty(prop, val)
             except Exception as e:
                 print(f'Failed to set pyttsx engine property {prop} to {val}:\n{e}')
+
+    def render(self, text, config = {}):
+        instance_config = self.get_instance_config(config)   
+        self.set_configs(instance_config)
+
         self.engine.save_to_file(text, self.temp_file_path)
         self.engine.runAndWait()
         return AudioSegment.from_wav(self.temp_file_path)
