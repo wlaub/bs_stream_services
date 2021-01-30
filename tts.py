@@ -1,6 +1,7 @@
 from gtts import gTTS
 import pyttsx3
 import os
+import time
 
 from pydub import AudioSegment
 from pydub.playback import play
@@ -68,7 +69,7 @@ class GTTS(TTS):
 
 class PyTTSX3(TTS):
     default_configs = {
-        'rate': 125,
+        'rate': 200,
         'volume': 1,
         'voice': 'anna', #This will be replaced with the actual ID during __init__
         }
@@ -118,10 +119,11 @@ class PyTTSX3(TTS):
     def render(self, text, config = {}):
         instance_config = self.get_instance_config(config)   
         self.set_configs(instance_config)
-
         self.engine.save_to_file(text, self.temp_file_path)
         self.engine.runAndWait()
-        return AudioSegment.from_wav(self.temp_file_path)
+        time.sleep(0.05) #sometimes the file doesn't get updated before trying to read it?
+        clip = AudioSegment.from_wav(self.temp_file_path)
+        return clip
 
 ####################
 # Message Snippets #
