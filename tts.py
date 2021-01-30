@@ -67,12 +67,45 @@ class GTTS(TTS):
         
 
 class PyTTSX3(TTS):
-    default_configs = {}
+    default_configs = {
+        'rate': 125,
+        'volume': 1,
+        'voice': 'anna', #This will be replaced with the actual ID during __init__
+        }
 
-    config_options = {}
+    config_options = {
+        }
 
     def __init__(self):
         self.engine = pyttsx3.init()
+        self.voices = self.engine.getProperty('voices')
+
+        def_voice = self.default_configs['voice']
+        try:
+            voice_id = self.get_voice(def_voice)
+        except KeyError as e:
+            voice_id = self.engine.getProperty('voice')
+            print(f'{e} - defaulting to {voice_id}')
+
+        self.default_configs['voice'] = voice_id
+        print([x.name for x in self.voices])
+        print(self.engine.getProperty('voice'))
+
+    def get_voices(self):
+        return [x.name for x in self.voices]
+
+    def get_voice(self, name):
+        """
+        Find the voice best matching the given name and return its id
+        """
+        matches = list(filter(lambda x: name.lower() in x.name.lower(), self.voices))
+        if len(matches) == 0:
+            raise KeyError(f'No voice matching {name}')
+            
+        result = matches[0]
+        if len(matches) > 1:
+            print(f'Name ambiguous, selecting {result.name}')
+        return result.id
 
     def set_configs(self, config):
         for prop, val in config.items():
@@ -100,7 +133,7 @@ class Snippet():
     contains global configurations such as the tts engine to use for all tts
     rendering.
     """
-    muted = False            #per-class mute setting. When mute is true, render should return None
+    muted = False           #per-class mute setting. When mute is true, render should return None
     tts_engine = PyTTSX3()  #The default tts engine to use
 
     def __init__(self, data, config = {}):
