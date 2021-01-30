@@ -15,6 +15,19 @@ import pydub.playback as playback
 
 #TODO: Classes for managing twitch chat messages and their metadata
 
+class CustomFilter():
+    filemap = {
+        'BibleThump': 'emote_sounds/kefka.mp3'
+    }
+    def process(self, snippet):
+        if not isinstance(snippet, tts.EmoteSnippet): return False
+
+        filename = self.filemap.get(snippet.data['emote_name'], None)
+        if filename == None: return False
+
+        return [tts.Mp3Snippet({'filename': filename})]
+   
+
 class Message():
     """
     A message
@@ -30,6 +43,7 @@ class Message():
             'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
             tts.SpeechSnippet({'text': 'URL Removed'})),
         filters.TooLongTruncate(30),
+        CustomFilter(),
     ]
 
     def __init__(self, msg, tags, history):

@@ -191,6 +191,12 @@ class EmoteSnippet(Snippet):
     def __repr__(self):
         return f'EmoteSnippet : {self.data["emote_name"]}'
 
+class Mp3Snippet(Snippet):
+    muted = False
+
+    def render(self):
+        return AudioSegment.from_mp3(self.data['filename'])
+
 ######################
 # Message Processors #
 ######################

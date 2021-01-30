@@ -12,6 +12,12 @@ import pydub.playback as playback
 # Message Filters #
 ###################
 
+"""
+A filter just takes a snippet via its process function and returns either
+* False if it didn't change anything
+* A list of snippets to replace the one it was given if it did
+"""
+
 class RegexReplace():
     def __init__(self, re, replacement):
         self.re = re
