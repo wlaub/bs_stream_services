@@ -23,6 +23,7 @@ import secrets
 from gtts import gTTS
 
 import tts
+import message
 
 from pydub import AudioSegment
 from pydub.playback import play
@@ -62,6 +63,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         self.last_speaker = 0
 
+        self.history = []
+
     def save_configs(self):
         print('* Saved configs')
         json.dump(self.user_configs, open(self.user_configs_file, 'w'))
@@ -92,77 +95,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def check_highlighted(self, tags):
         return tags.get('msg-id', None) == 'highlighted-message'
-
-    def parse_emotes(self, emotes):
-        result = []
-        kinds = emotes.split('/')
-        for kind in kinds:
-            kind, ranges = kind.split(':')
-            king = int(kind)
-            ranges = ranges.split(',')
-            for left, right in map(lambda x: x.split('-'), ranges):
-                result.append({'kind': kind, 'left': int(left), 'right': int(right)})
-        result = sorted(result, key=lambda x: x['left'])
-        return result
-
-    def strip_emotes(self, text, tags):
-        emotes = tags['emotes']
-        if emotes == None: return text
-        emotes = self.parse_emotes(emotes)
-        diff = 0
-        for emote in emotes:
-            textl = text[:emote['left']-diff]
-            textr = text[emote['right']+1-diff:]
-            diff += emote['right']-emote['left'] + 1
-            text = textl+textr
-
-        return text
-
-
-    def split_emotes(self, text, tags):
-        emotes = tags['emotes']
-        if emotes == None: return [tts.SpeechSnippet({'text': text.strip()})]
-        result = []
-        emotes = self.parse_emotes(emotes)
-        diff = 0
-        for emote in emotes:
-            textl = text[:emote['left']-diff]
-            textr = text[emote['right']+1-diff:]
-#            diff += emote['right']-emote['left'] + 1
-            emote['text'] = text[emote['left']-diff:emote['right']-diff+1]
-            diff += len(text)-len(textr)
-            text = textr
-            result.append(tts.SpeechSnippet({'text': textl.strip()}))
-            result.append(tts.EmoteSnippet({'emote_name': emote['text']}))
-#            result.append(SpeechSnippet('text', textl.strip()))
-#            result.append(SpeechSnippet('emote', emote))
-        if len(textr.strip()) > 0:
-            result.append(tts.SpeechSnippet({'text': textr.strip()}))
-#            result.append(SpeechSnippet('text', textr.strip()))
-
-        return result
-
-
-    def speak_text(self, snippets, reverse=False, fade=False, echo=False, tags={}, **kwargs):
-        clip = AudioSegment.empty()
-        for snippet in snippets:
-            snippet.config = dict(kwargs) #TODO: HACK, remove
-            tclip = snippet.render()
-            if tclip != None:
-                clip += tclip
-        if clip.duration_seconds > self.max_message_duration:
-            return False
-        if reverse:
-            clip = clip.reverse()
-        if fade:
-            clip = clip.fade_out(int(clip.duration_seconds*1000))
-
-        if self.check_highlighted(tags):
-            clip = fx.speedup(clip)
-            clip = fx.low_pass_filter(clip, 500)
-
-        play(clip)
-        return True
 
     def check_lang(self, lang):
         gTTS('t', lang=lang)
@@ -211,6 +143,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         if 'http' in msg: abort = True
 
+        
+
         if not abort:
             return snippets
         return []
@@ -233,9 +167,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 self.do_command(e, tags, cmd, args)
             else:
                 msg = e.arguments[0]
-                snippets = self.filter_text(msg, tags)
-                lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, lang=lang, tags=tags)
+
+                mess = message.Message(msg, tags, self.history)
+                mess.play()
+                self.history.append(mess)
 
             self.last_speaker = tags['user-id']
         except Exception as exc:

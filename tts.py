@@ -160,7 +160,9 @@ class SpeechSnippet(Snippet):
     def render(self):
         if self.muted: return None
 
-        max_length = self.config.pop('max_length', None)
+        config = dict(self.config)
+
+        max_length = config.pop('max_length', None)
         clip = self.tts_engine.render(self.data['text'], self.config)
         if max_length != None:
             clip = clip[:int(max_length*1000)]
@@ -188,20 +190,6 @@ class EmoteSnippet(Snippet):
 
     def __repr__(self):
         return f'EmoteSnippet : {self.data["emote_name"]}'
-
-########################
-# Twitch Chat Messages #
-########################
-
-#TODO: Classes for managing twitch chat messages and their metadata
-
-#############
-# User Info #
-#############
-
-#TODO: User-specific configuration info
-#e.g. voice customization, single-user muting
-#subscriber-only features
 
 ######################
 # Message Processors #
