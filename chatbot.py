@@ -22,53 +22,12 @@ import secrets
 
 from gtts import gTTS
 
+import tts
+
 from pydub import AudioSegment
 from pydub.playback import play
 import pydub.effects as fx
 import pydub.playback as playback
-
-class SpeechSnippet():
-    mute_emotes = False
-
-    emote_map = {
-        'LUL':'kefka.mp3'
-    }
-    emote_dir = 'emote_sounds'
-
-    def __init__(self, kind, data):
-        self.kind = kind
-        self.data = data
-
-    def read(self, text, **kwargs):
-        if len(text) == 0: return
-        max_length = kwargs.pop('max_length', None)
-
-        gTTS(text, **kwargs).save('temp.mp3')
-        clip = AudioSegment.from_mp3('temp.mp3')
-        if max_length != None:
-            clip = clip[:1000*max_length]
-
-        return clip
-
-    def play_mp3(self, filename):
-        clip = AudioSegment.from_mp3(filename)
-        return clip
-
-    def play(self, **kwargs):
-        if self.kind == 'text':
-            return self.read(self.data, **kwargs)
-        elif self.kind == 'ctext':
-            return self.read(self.data['text'], max_length = self.data['max_length'], **kwargs)
-        elif self.kind =='emote':
-            if self.data['text'] in self.emote_map.keys():
-                filename = self.emote_map[self.data['text']]  
-                return self.play_mp3(os.path.join(self.emote_dir, filename))
-            elif not self.mute_emotes:
-                return self.read(self.data['text'], **kwargs)
-
-    def __repr__(self):
-        return f'{self.kind} : {self.data}'
-
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
     tts_subs = {
@@ -162,7 +121,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def split_emotes(self, text, tags):
         emotes = tags['emotes']
-        if emotes == None: return [SpeechSnippet('text', text.strip())]
+        if emotes == None: return [tts.SpeechSnippet({'text': text.strip()})]
         result = []
         emotes = self.parse_emotes(emotes)
         diff = 0
@@ -173,10 +132,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             emote['text'] = text[emote['left']-diff:emote['right']-diff+1]
             diff += len(text)-len(textr)
             text = textr
-            result.append(SpeechSnippet('text', textl.strip()))
-            result.append(SpeechSnippet('emote', emote))
+            result.append(tts.SpeechSnippet({'text': textl.strip()}))
+            result.append(tts.EmoteSnippet({'emote_name': emote['text']}))
+#            result.append(SpeechSnippet('text', textl.strip()))
+#            result.append(SpeechSnippet('emote', emote))
         if len(textr.strip()) > 0:
-            result.append(SpeechSnippet('text', textr.strip()))
+            result.append(tts.SpeechSnippet({'text': textr.strip()}))
+#            result.append(SpeechSnippet('text', textr.strip()))
 
         return result
 
@@ -184,7 +146,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def speak_text(self, snippets, reverse=False, fade=False, echo=False, tags={}, **kwargs):
         clip = AudioSegment.empty()
         for snippet in snippets:
-            tclip = snippet.play(**kwargs)
+            snippet.config = dict(kwargs) #TODO: HACK, remove
+            tclip = snippet.render()
             if tclip != None:
                 clip += tclip
         if clip.duration_seconds > self.max_message_duration:
@@ -240,7 +203,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         snippets = self.split_emotes(msg, tags)
 
         if user != self.last_speaker and self.say_names:
-            snippets.insert(0, SpeechSnippet('ctext', {'text': speaker, 'max_length':1}))
+            snippets.insert(0, tts.SpeechSnippet({'text': speaker}, {'max_length: 1'}))
+#            snippets.insert(0, SpeechSnippet('ctext', {'text': speaker, 'max_length':1}))
 
         print(snippets)
         abort = False
@@ -276,6 +240,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.last_speaker = tags['user-id']
         except Exception as exc:
             print(f'Failed to process message {e}\n\n{exc}')
+            raise
         print(flush=True)
         return
 
