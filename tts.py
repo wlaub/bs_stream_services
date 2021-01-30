@@ -113,4 +113,28 @@ class EmoteSnippet(Snippet):
     def __repr__(self):
         return f'EmoteSnippet : {self.data["emote_name"]}'
 
+########################
+# Twitch Chat Messages #
+########################
+
+#TODO: Classes for managing twitch chat messages and their metadata
+
+#############
+# User Info #
+#############
+
+#TODO: User-specific configuration info
+#e.g. voice customization, single-user muting
+#subscriber-only features
+
+######################
+# Message Processors #
+######################
+
+#TODO: Converting chat messages into snippets
+#E.g. converting emotes into EmoteSnippets
+#Performing search and replace behaviors
+#Appending/prepending additional text such as speaker name
+#Handling truncations and censoring
+
 
