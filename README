@@ -1,0 +1,5 @@
+Based on https://github.com/twitchdev/chatbot-python-sample
+
+To use, create a secrets.py from the provided secrets_template.py with the username, client_id, and token filled in accordingly.
+
+> python chatbot.py [channel name]
