@@ -22,20 +22,30 @@ class RegexReplace():
     def __init__(self, re, replacement):
         self.re = re
         self.replacement = replacement
-    
+
+    def get_replacement(self, match):
+        return self.replacement
+
     def process(self, snippet):
         if not isinstance(snippet, tts.SpeechSnippet): return False
 
         pieces = re.split(self.re, snippet.data['text'])
+        matches = re.findall(self.re, snippet.data['text'])
         if len(pieces) == 1: return False
 
         result = []
         for idx, piece in enumerate(pieces):
             result.append(tts.SpeechSnippet({'text': piece}, snippet.config))
             if idx < len(pieces) - 1:
-                result.append(self.replacement)
+                result.append(self.get_replacement(matches[idx]))
+#                result.append(self.replacement)
 
         return result
+
+class ModemReplace(RegexReplace):
+    def get_replacement(self, match):
+        print(match)
+        return tts.ModemSnippet({'text': match})
 
 class TooLongTruncate():
     def __init__(self, max_length):

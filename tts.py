@@ -38,6 +38,14 @@ class TTS():
                 instance_config[key] = config[key]
         return instance_config
 
+    def get_config_options(self, config):
+        lines = []
+        lines.append('TTS Configuration Options:')
+        instance_config = self.get_instance_config(config)
+        for key, val in self.config_options.items():
+            lines.append(f'{key}: {instance_config[key]} / {self.default_configs[key]}')
+        return ' | '.join(lines)
+
 
     def render(self, text, config):
         """
@@ -71,22 +79,23 @@ class PyTTSX3(TTS):
     default_configs = {
         'rate': 200,
         'volume': 1,
-        'voice': 'anna', #This will be replaced with the actual ID during __init__
+        'voice': None, #This will be replaced with the actual ID during __init__
+        'voice_name': 'anna'
         }
 
     config_options = {
+        'rate': {'description': 'TTS reading rate', 'permissions': ['mod', 'sub']},
+        'voice_name': {'description': 'Name of the voice to read in', 'permissions': ['mod', 'sub']}
         }
 
     def __init__(self):
         self.engine = pyttsx3.init()
         self.voices = self.engine.getProperty('voices')
 
-        def_voice = self.default_configs['voice']
-        try:
-            voice_id = self.get_voice(def_voice)
-        except KeyError as e:
-            voice_id = self.engine.getProperty('voice')
-            print(f'{e} - defaulting to {voice_id}')
+        voice_id = self.get_voice(
+            self.default_configs['voice_name'], 
+            self.engine.getProperty('voice')
+            )
 
         self.default_configs['voice'] = voice_id
         print([x.name for x in self.voices])
@@ -95,13 +104,17 @@ class PyTTSX3(TTS):
     def get_voices(self):
         return [x.name for x in self.voices]
 
-    def get_voice(self, name):
+    def get_voice(self, name, default=None):
         """
         Find the voice best matching the given name and return its id
         """
         matches = list(filter(lambda x: name.lower() in x.name.lower(), self.voices))
         if len(matches) == 0:
-            raise KeyError(f'No voice matching {name}')
+            if default == None:
+                raise KeyError(f'No voice matching {name}')
+            else:
+                print(f'No voice matching {name}')
+                return default
             
         result = matches[0]
         if len(matches) > 1:
@@ -109,6 +122,8 @@ class PyTTSX3(TTS):
         return result.id
 
     def set_configs(self, config):
+        if config['voice_name'] != self.default_configs['voice_name']:
+            config['voice'] = self.get_voice(config['voice_name'], self.default_configs['voice'])
         for prop, val in config.items():
             try:
 #                old = self.engine.getProperty(prop)
@@ -138,7 +153,7 @@ class Snippet():
     muted = False           #per-class mute setting. When mute is true, render should return None
     tts_engine = PyTTSX3()  #The default tts engine to use
 
-    def __init__(self, data, config = {}):
+    def __init__(self, data, config = {'voice_name':'sam'}):
         """
         Data is the message snippet content and relevant metadata
         Config is a dictionary with parameters to be used for rendering the 
@@ -196,6 +211,31 @@ class Mp3Snippet(Snippet):
 
     def render(self):
         return AudioSegment.from_mp3(self.data['filename'])
+
+class ModemSnippet(Snippet):
+    muted = False
+
+    def render(self, **kwargs):
+        if self.muted: return None
+        duration = kwargs.get('duration', 0.75)
+        count = len(self.data['text'])
+        fs = 44100
+        sps =16
+        base_dur = sps*8*count/fs
+        repeats = max(1,int(duration/base_dur))
+        bits = []
+        for char in self.data['text']:
+            for _ in range(repeats):
+                bits.extend(list(bin(ord(char)))[2:])
+        data = []
+        for bit in bits:
+            if bit == '0': value = 0x00
+            else: value = 0x40
+            data.extend([value]*sps)
+        result = AudioSegment(data= bytes(data), sample_width=1, frame_rate = fs, channels  =1)
+        return result
+
+
 
 ######################
 # Message Processors #

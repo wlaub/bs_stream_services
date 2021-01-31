@@ -163,6 +163,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         except Exception as exc:
             raise exc
 
+    def speak_message(self, text, tags, play_kwargs = {}):
+        msg = message.Message(text, tags, self.history)
+        msg.play(**play_kwargs)
+        self.history.append(msg)
 
     def on_pubmsg(self, c, e):
         try:
@@ -180,11 +184,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 print('Received command: ' + cmd)
                 self.do_command(e, tags, cmd, args)
             else:
-                msg = e.arguments[0]
-
-                mess = message.Message(msg, tags, self.history)
-                mess.play()
-                self.history.append(mess)
+                self.speak_message(e.arguments[0], tags)
 
             self.last_speaker = tags['user-id']
         except Exception as exc:
@@ -246,15 +246,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                     except IndexError as exc:
                         c.privmsg(self.channel, 'usage: lang [language]')
             elif subcmd == 'rev':
-                msg = ' '.join(args)
-                snippets = self.filter_text(msg, tags)
-                lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, reverse=True, lang=lang, tags=tags)
+                text = ' '.join(args)
+                self.speak_message(text, tags, {'reverse':True})
             elif subcmd == 'fade':
-                msg = ' '.join(args)
-                snippets = self.filter_text(msg, tags)
-                lang = self.get_user_config(tags, 'lang', 'en')               
-                self.speak_text(snippets, fade=True, lang=lang, tags=tags)
+                text = ' '.join(args)
+                self.speak_message(text, tags, {'fade':True})
+            elif subcmd == 'config':
+                helptext = tts.Snippet.tts_engine.get_config_options({})
+                c.privmsg(self.channel, str(helptext))
             else:
                 helptext = []
                 helptext.append('TTS Commands:')

@@ -26,7 +26,6 @@ class CustomFilter():
         if filename == None: return False
 
         return [tts.Mp3Snippet({'filename': filename})]
-   
 
 class Message():
     """
@@ -39,7 +38,7 @@ class Message():
     max_message_duration = 30 # in seconds
 
     filters = [
-        filters.RegexReplace( # replaces urls
+        filters.ModemReplace( # replaces urls
             'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
             tts.SpeechSnippet({'text': 'URL Removed'})),
         filters.TooLongTruncate(30),
@@ -66,7 +65,7 @@ class Message():
         self.snippets = self.process(self.snippets)
         self.snippets = self.postprocess(self.snippets)
 
-    def play(self):
+    def play(self, reverse=False, fade=False):
         """
         Play the message
         """
@@ -78,10 +77,10 @@ class Message():
         if clip.duration_seconds > self.max_message_duration:
             return False
 
-#        if reverse:
-#            clip = clip.reverse()
-#        if fade:
-#            clip = clip.fade_out(int(clip.duration_seconds*1000))
+        if reverse:
+            clip = clip.reverse()
+        if fade:
+            clip = clip.fade_out(int(clip.duration_seconds*1000))
 
 #        if self.check_highlighted(tags):
 #            clip = fx.speedup(clip)
