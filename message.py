@@ -193,8 +193,9 @@ class User():
         self.display_name = tags.get('display-name')
     
         self.badges = []
-        for b in tags.get('badges', []):
-            self.badges.append(b.split('/'))
+        if tags['badges'] != None:
+            for b in tags.get('badges', []):
+                self.badges.append(b.split('/'))
 
         self.configs = {}
     

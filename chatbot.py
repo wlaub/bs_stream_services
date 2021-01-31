@@ -149,6 +149,20 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return snippets
         return []
 
+    def on_privmsg(self, c, e):
+        try:
+            tags = {}
+            for d in e.tags:
+                tags[d['key']] = d['value']
+      
+            import pprint
+            print('private message')
+            print(e.arguments)
+            pprint.pprint(tags)
+
+        except Exception as exc:
+            raise exc
+
 
     def on_pubmsg(self, c, e):
         try:
