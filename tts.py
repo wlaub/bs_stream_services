@@ -213,6 +213,9 @@ class Mp3Snippet(Snippet):
         return AudioSegment.from_mp3(self.data['filename'])
 
 class ModemSnippet(Snippet):
+    """
+    Converts text into a bitstream via ascii and then into a sound
+    """
     muted = False
 
     def render(self, **kwargs):

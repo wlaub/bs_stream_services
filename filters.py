@@ -43,6 +43,9 @@ class RegexReplace():
         return result
 
 class ModemReplace(RegexReplace):
+    """
+    Like regex replace, but generate a ModemSnippet from the match
+    """
     def get_replacement(self, match):
         print(match)
         return tts.ModemSnippet({'text': match})
