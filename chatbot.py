@@ -264,7 +264,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         # The command was not recognized
         else:
-            c.privmsg(self.channel, "Did not understand command: " + cmd)
+            pass
+#            c.privmsg(self.channel, "Did not understand command: " + cmd)
 
         if self.configs_changed:
             self.save_configs()
