@@ -5,7 +5,7 @@ import ipc
 class STT():
     def __init__(self):
         
-        self.overlay = ipc.Client(ipc.ports['overlay'])
+        self.overlay = ipc.OverlayClient()
         self.tts = ipc.Client(ipc.ports['tts'])
 
         for index, name in enumerate(sr.Microphone.list_microphone_names()[:4]):
@@ -61,7 +61,7 @@ class STT():
                     print('Repeated sound')
                     continue
                 
-                self.overlay.send({'kind': 'log', 'data': f'[MODEL] {conf*100:.0f} "{result}"'})
+                self.overlay.send_log(message = f'{conf*100:.0f} "{result}"', level= 'model')
                 self.tts.send({'kind': 'stt', 'data': result})
                 
                 last_line = result

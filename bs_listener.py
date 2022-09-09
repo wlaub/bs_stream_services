@@ -17,7 +17,7 @@ class BaseMonitor():
         self.history = []
         self.ws = None
         self.running = True
-        self.overlay = ipc.Client(ipc.ports['overlay'])
+        self.overlay = ipc.OverlayClient()
         self.last_error = None
         self.norepeat_errors = set([10061])
     
@@ -98,7 +98,8 @@ class Monitor(BaseMonitor):
                 info = message['mapInfoChanged']
                 if len(self.history) == 0 or info['level_id'] != self.history[-1]['level_id']:                    
                     lines = self.format_log(info)
-                    self.overlay.send({'kind': 'new_map', 'data': lines})
+                    self.overlay.send_map(lines)
+#                    self.overlay.send({'kind': 'new_map', 'data': lines})
                     self.history.append(info)    
 
 

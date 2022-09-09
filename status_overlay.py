@@ -146,7 +146,7 @@ def do_tick():
                     handler.add_line(line)
             elif kind == 'log':
                 if offset >= 0 and offset < 3600:
-                    handler.add_line(msg['data'])
+                    handler.add_line(f"[{msg['level'].upper()}] {msg['data']}")
         except Exception as e:
             print(f'Excepton in ipc: {e}')
 

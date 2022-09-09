@@ -1,3 +1,4 @@
+import typing
 import zmq
 import json
 
@@ -12,7 +13,7 @@ class Server():
         self.socket = self.context.socket(zmq.ROUTER)
         self.socket.bind(f'tcp://127.0.0.1:{port}')
         
-    def recv(self):
+    def recv(self) -> typing.Dict:
         result = []
         while True:
             try:
@@ -31,7 +32,7 @@ class Client():
         self.socket = self.context.socket(zmq.DEALER)
         self.socket.connect(f'tcp://127.0.0.1:{port}')
         
-    def send(self, data):
+    def send(self, data: typing.Dict):
         try:
             self.socket.send_json(data)
             return True
@@ -41,3 +42,15 @@ class Client():
         
     def close(self):
         self.socket.close()
+        
+class OverlayClient(Client):
+    def __init__(self):
+        super().__init__(ports['overlay'])
+
+    def send_map(self, lines: typing.List):
+        self.send({'kind': 'new_map', 'data': lines})
+
+    def send_log(self, message: str, level: str = 'info'):
+        self.send({'kind': 'log', 'level': level, 'data': message})
+
+
