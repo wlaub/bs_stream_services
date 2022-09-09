@@ -69,7 +69,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         self.last_speaker = 0
 
-        self.tts_server = ipc.Client(ipc.ports['tts'])
+        self.tts_client = ipc.TTSClient()
 
         self.history = []
 
@@ -176,10 +176,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         hist = None
         if len(self.history) > 0:
             hist = self.history[-1]
-        self.tts_server.send({
-            'kind': 'chat',
-            'data': {'msg': text, 'tags': tags, 'history': hist, 'play_kwargs':play_kwargs}
-            })
+        self.tts_client.send_chat(text, tags, hist, play_kwargs)
         
         self.history.append({'msg': text, 'tags': tags})
 

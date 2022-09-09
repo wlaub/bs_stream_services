@@ -53,4 +53,15 @@ class OverlayClient(Client):
     def send_log(self, message: str, level: str = 'info'):
         self.send({'kind': 'log', 'level': level, 'data': message})
 
-
+class TTSClient(Client):
+    def __init__(self):
+        super().__init__(ports['tts'])
+        
+    def send_chat(self, text, tags, hist, play_kwargs):
+        self.send({
+            'kind': 'chat',
+            'data': {'msg': text, 'tags': tags, 'history': hist, 'play_kwargs':play_kwargs}
+            })
+            
+    def send_stt(self, text):
+        self.send({'kind': 'stt', 'data': text})
