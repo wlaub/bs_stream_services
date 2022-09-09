@@ -32,6 +32,8 @@ To use, create a secrets.py from the provided secrets_template.py with the usern
 
 Speech-to-text listener monitors a microphone for intelligible speech and sends the results to `tts_listener` and `status_overlay`
 
+You'll have to manually tell it which microphone to use, and that might break if the default mic changes. I'm not sure what the deal is, but I find that I need to make sure everything else (steamvr etc) is up and running before starting this one.
+
 Uses SpeechRecognition and `recognize_google`, which I hear might break if something something api keys whatever.
 
 # Tools
