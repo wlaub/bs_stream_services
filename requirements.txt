@@ -1,6 +1,7 @@
 certifi==2020.12.5
 chardet==4.0.0
 click==7.1.2
+comtypes==1.1.14
 gTTS==2.2.1
 idna==2.10
 importlib-metadata==3.3.0
@@ -13,11 +14,19 @@ jaraco.logging==3.1.0
 jaraco.stream==3.0.0
 jaraco.text==3.4.0
 more-itertools==8.6.0
+PyAudio==0.2.12
 pydub==0.24.1
+pypiwin32==223
+pyttsx3==2.90
 pytz==2020.5
+pywin32==304
+pyzmq==23.2.1
 requests==2.25.1
+simpleaudio==1.0.4
 six==1.15.0
+SpeechRecognition==3.8.1
 tempora==4.0.1
 typing-extensions==3.7.4.3
 urllib3==1.26.2
+websocket-client==1.4.0
 zipp==3.4.0

@@ -80,7 +80,7 @@ class PyTTSX3(TTS):
         'rate': 200,
         'volume': 1,
         'voice': None, #This will be replaced with the actual ID during __init__
-        'voice_name': 'anna'
+        'voice_name': 'zira'
         }
 
     config_options = {
@@ -153,7 +153,7 @@ class Snippet():
     muted = False           #per-class mute setting. When mute is true, render should return None
     tts_engine = PyTTSX3()  #The default tts engine to use
 
-    def __init__(self, data, config = {'voice_name':'sam'}):
+    def __init__(self, data, config = {'voice_name':'zira'}):
         """
         Data is the message snippet content and relevant metadata
         Config is a dictionary with parameters to be used for rendering the 
@@ -181,12 +181,37 @@ class SpeechSnippet(Snippet):
         clip = self.tts_engine.render(self.data['text'], self.config)
         if max_length != None:
             clip = clip[:int(max_length*1000)]
+        
+            
         return clip
 
     def __repr__(self):
         return f'SpeechSnippet : {self.data["text"]}'
 
+class AISpeechSnippet(SpeechSnippet):
+    def render(self):
+        if self.muted: return None
 
+        config = dict(self.config)
+
+        clips = []
+        for voice in ['david', 'zira']:
+            config['voice_name'] = voice
+            clips.append(self.tts_engine.render(self.data['text'], config))
+            
+        clip = None
+        for tclip in clips:
+            if clip is None:
+                clip = tclip
+            else:
+                longer = max(clip, tclip, key=lambda x: len(x))
+                shorter = min(clip, tclip, key=lambda x: len(x))
+                clip = longer.overlay(shorter)
+        return clip
+
+    def __repr__(self):
+        return f'SpeechSnippet : {self.data["text"]}'
+        
 class EmoteSnippet(Snippet):
     muted = False
     emote_map = {

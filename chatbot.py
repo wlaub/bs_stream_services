@@ -18,12 +18,16 @@ import time
 import json
 import re
 
+import threading
+
 import secrets
 
 from gtts import gTTS
 
 import tts
 import message
+
+import ipc
 
 from pydub import AudioSegment
 from pydub.playback import play
@@ -46,22 +50,26 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.channel = '#' + channel
 
         # Get the channel id, we will need this for v5 API calls
-        url = 'https://api.twitch.tv/kraken/users?login=' + channel
-        headers = {'Client-ID': client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
-        r = requests.get(url, headers=headers).json()
-        self.channel_id = r['users'][0]['_id']
+        #url = 'https://api.twitch.tv/helix/users?login=' + channel
+        #headers = {'Client-ID': client_id, 'Accept': 'application/vnd.twitchtv.v5+json', 'Authorization': f'Bearer {token}'}
+        #r = requests.get(url, headers=headers).json()
+        #print(r)
+        #self.channel_id = r['users'][0]['_id']
 
         # Create IRC bot connection
         server = 'irc.chat.twitch.tv'
         port = 6667
+        botname = 'iambotatvideogamesdotcom'
         print('Connecting to ' + server + ' on port ' + str(port) + '...', flush=True)
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:'+token)], username, username)
-
+        print('Connected', flush=True)
         self.user_configs_file = user_configs
         self.user_configs = json.load(open(self.user_configs_file, 'r'))
         self.configs_changed = False
 
         self.last_speaker = 0
+
+        self.tts_server = ipc.Client(ipc.ports['tts'])
 
         self.history = []
 
@@ -164,9 +172,16 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             raise exc
 
     def speak_message(self, text, tags, play_kwargs = {}):
-        msg = message.Message(text, tags, self.history)
-        msg.play(**play_kwargs)
-        self.history.append(msg)
+        
+        hist = None
+        if len(self.history) > 0:
+            hist = self.history[-1]
+        self.tts_server.send({
+            'kind': 'chat',
+            'data': {'msg': text, 'tags': tags, 'history': hist, 'play_kwargs':play_kwargs}
+            })
+        
+        self.history.append({'msg': text, 'tags': tags})
 
     def on_pubmsg(self, c, e):
         try:
@@ -189,7 +204,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.last_speaker = tags['user-id']
         except Exception as exc:
             print(f'Failed to process message {e}\n\n{exc}')
-            raise
         print(flush=True)
         return
 
@@ -201,32 +215,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return r['id']
 
 
+    def say_in_chat(self, text):
+        c = self.connection
+        c.privmsg(self.channel, text)
+
     def do_command(self, e, tags, cmd, args):
         c = self.connection
 
-        # Poll the API to get current game.
-        if cmd == "game":
-            url = 'https://api.twitch.tv/kraken/channels/' + self.channel_id
-            headers = {'Client-ID': self.client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
-            r = requests.get(url, headers=headers).json()
-            c.privmsg(self.channel, r['display_name'] + ' is currently playing ' + r['game'])
-
-        # Poll the API the get the current status of the stream
-        elif cmd == "title":
-            url = 'https://api.twitch.tv/kraken/channels/' + self.channel_id
-            headers = {'Client-ID': self.client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
-            r = requests.get(url, headers=headers).json()
-            c.privmsg(self.channel, r['display_name'] + ' channel title is currently ' + r['status'])
-
-        # Provide basic information to viewers for specific commands
-        elif cmd == "raffle":
-            message = "This is an example bot, replace this text with your raffle text."
-            c.privmsg(self.channel, message)
-        elif cmd == "schedule":
-            message = "This is an example bot, replace this text with your schedule text."            
-            c.privmsg(self.channel, message)
-
-        elif cmd == 'tts':
+        if cmd == 'tts':
             subcmd = ''
             if len(args) > 0:
                 subcmd = args[0]
@@ -258,6 +254,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 helptext = []
                 helptext.append('TTS Commands:')
                 helptext.append('* lang [language code]')
+                helptext.append('* rev [text]')
+                helptext.append('* fade [text]')
                 c.privmsg(self.channel, ' '.join(helptext))
             
 
@@ -270,11 +268,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if self.configs_changed:
             self.save_configs()
 
+
 def main():
 
     if len(sys.argv) < 2:
         print(f'Usage: python chatbot.py [channel]')
         exit(1)
+
 
     username = secrets.username
     client_id = secrets.client_id #Obtained by creating a twitch API app and getting its key. Does not include the 'oauth' part
@@ -283,8 +283,12 @@ def main():
     channel = sys.argv[1]
 
     bot = TwitchBot(username, client_id, token, channel, 'user_configs.json')
-
-    bot.start()
+    
+    try:
+        bot.start()
+    except (KeyboardInterrupt, Exception):
+        pass
+    
 
 if __name__ == "__main__":
     main()

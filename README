@@ -1,5 +1,29 @@
+# bs_stream_services
+
+Various services to support beat saber streaming.
+
+## status_overlay.py
+
+An OBS script that updates the test source named "Status Text" with pre-scripted messages and messages received via ipc.
+
+## bs_listener.py
+
+Connects to the beat saber plus overlay socket and sends new map info to status_overlay.
+
+## tts-listener.py
+
+Text-to-speech listener receives messages, renders them to audio, and plays them.
+
+## chatbot.py
+
+Reads a chat and sends messages to tts_listener. Somewhat legacy. Includes various features.
+
 Based on https://github.com/twitchdev/chatbot-python-sample
 
 To use, create a secrets.py from the provided secrets_template.py with the username, client_id, and token filled in accordingly.
 
 > python chatbot.py [channel name]
+
+## stt-listener.py
+
+Speech-to-text listener monitors a microphone for intelligible speech and sends the results to tts_listener and status_overlay

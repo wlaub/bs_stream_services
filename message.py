@@ -27,6 +27,14 @@ class CustomFilter():
 
         return [tts.Mp3Snippet({'filename': filename})]
 
+class AIMessage():
+    def __init__(self, text):
+        self.snippet = tts.AISpeechSnippet({'text':text})
+        
+    def play(self, **kwargs):
+        clip = self.snippet.render()
+        play(clip)
+
 class Message():
     """
     A message
@@ -45,16 +53,19 @@ class Message():
         CustomFilter(),
     ]
 
-    def __init__(self, msg, tags, history):
+    def __init__(self, msg, tags, history, play_kwargs = {}):
         """
         msg and tags come from the chatbot
-        history is a list in order of all previous messages
+        history the previous {msg: msg, tags:tags}
         """
         self.msg = msg
         self.tags = tags
-        self.history = history
+        self.play_kwargs = play_kwargs
 
         self.user = User(msg, tags)
+        self.past_user = None
+        if history is not None:
+            self.past_user = User(**history)
 
         self.emote_data = self.parse_emotes()
         #TODO: Extract emote data
@@ -69,6 +80,9 @@ class Message():
         """
         Play the message
         """
+        reverse = self.play_kwargs.pop('reverse', reverse)
+        fade = self.play_kwargs.pop('fade', fade)
+        
         clip = AudioSegment.empty()
         for snippet in self.snippets:
             tclip = snippet.render()
@@ -158,7 +172,7 @@ class Message():
         Executed after all filters are done
         """
         if self.announce_new_speakers:
-            if len(self.history) == 0 or self.user.id != self.history[-1].user.id:
+            if self.past_user is None or self.past_user.id != self.user.id:
                 result.insert(0, tts.SpeechSnippet({'text': self.user.display_name}, {'max_length': 1}))
        
         return result
