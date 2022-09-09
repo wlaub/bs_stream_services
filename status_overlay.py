@@ -2,31 +2,10 @@ import time, datetime
 import math
 import json
 import textwrap
-import threading
 import traceback
 import obspython as obs
-import websocket
 
-import zmq
-
-class Server():
-    def __init__(self, port):
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.ROUTER)
-        self.socket.bind(f'tcp://127.0.0.1:{port}')
-        
-    def recv(self):
-        result = []
-        while True:
-            try:
-                msg = self.socket.recv_multipart(flags= zmq.NOBLOCK)
-                port, data = msg
-                result.append(json.loads(data.decode()))
-            except zmq.ZMQError as e:
-                return result
-
-    def close(self):
-        self.socket.close()
+import ipc
 
 class Handler():
     divider = '-'*37 + '\n'
@@ -142,11 +121,11 @@ class Handler():
         
 handler = Handler()
 
-ipc = Server(7852)
+ipc_server = ipc.Server(7852)
 
 def script_unload():
     print('Unloading')
-    ipc.close()
+    ipc_server.close()
     obs.timer_remove(do_tick)
 
 def script_load(settings):
@@ -157,7 +136,7 @@ def script_description():
 
 def do_tick():
     offset = handler.get_offset()
-    messages = ipc.recv()
+    messages = ipc_server.recv()
     for msg in messages:
         try:
             kind = msg.get('kind', None)
