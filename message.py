@@ -106,8 +106,8 @@ class Message():
 
 
     def parse_emotes(self):
-        emotes = self.tags['emotes']
-        if emotes == None: return []
+        emotes = self.tags.get('emotes', None)
+        if emotes is None: return []
         result = []
         kinds = emotes.split('/')
         for kind in kinds:
@@ -123,11 +123,11 @@ class Message():
         """
         Generate the starting set of snippets. It is here that emotes get split out
         """
-        emotes = self.tags['emotes']
+        emotes = self.tags.get('emotes', None)
         text = self.msg
 
         #handle emotes
-        if emotes == None or not self.extract_emotes: 
+        if emotes is None or not self.extract_emotes: 
             result = [tts.SpeechSnippet({'text': text.strip()})]
         else:
             result = []
@@ -206,8 +206,9 @@ class User():
         self.display_name = tags.get('display-name')
     
         self.badges = []
-        if tags['badges'] != None:
-            for b in tags.get('badges', []):
+        tag_badges = tags.get('badges', [])
+        if tag_badges is not None:
+            for b in tag_badges:
                 self.badges.append(b.split('/'))
 
         self.configs = {}
