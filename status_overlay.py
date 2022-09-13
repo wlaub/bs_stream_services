@@ -19,10 +19,17 @@ class Handler():
         self.make_intro_script()
         self.infolines =''
         
+        #-30s: warning
+        #-2s: error
+        #10s: garage door starts
+        #22.5s garage door ends
+        err_start = 3600-60
+        
         self.events = [
             [3300, '[INFO] Source occlusion projected in 300 seconds'],
-#            [3300, '[INFO] Video stream corrupted PER = 1.0'],
-#            [3330, '[INFO] Video stream recovered],
+#            [err_start-5, '[INFO] Uncorrectably packet errors in video stream'],
+#            [err_start-2, '[INFO] Video stream corrupted PER = 1.0'],
+#            [err_start+26, '[INFO] Video stream recovered'],
             ]
         self.events = sorted(self.events, key = lambda x: x[0])
         
@@ -134,6 +141,13 @@ def script_load(settings):
 def script_description():
     return 'A script.'
 
+def set_color(settings, r,g,b,a):
+    try:
+        obs.obs_data_set_int(settings, 'color', (int(a)<<24)+(int(b)<<16)+(int(g)<<8)+int(r))
+    except Exception as e:
+        print(e)
+    
+
 def do_tick():
     offset = handler.get_offset()
     messages = ipc_server.recv()
@@ -159,6 +173,30 @@ def do_tick():
     obs.obs_source_update(source, settings)
     obs.obs_data_release(settings)
     obs.obs_source_release(source)
+
+
+
+    source = obs.obs_get_source_by_name('RecursionFilter')
+    settings = obs.obs_source_get_settings(source)
+    r = 0
+    b = 0
+    g = 0
+    a = 140
+    if offset < 3300:
+        a = 150 + 40*math.sin(offset*2*math.pi/60)
+        r = 0
+#        r = (1+math.sin(offset*6.28/3))*120
+#        g = (1+math.sin((offset+1)*6.28/3))*120
+#        b = (1+math.sin((offset+2)*6.28/3))*120
+    else:
+        x = (offset-3300)/300
+        a = 150 + 95*x
+        r = 20*x
+    set_color(settings, r,g,b,a)
+    obs.obs_source_update(source, settings)
+    obs.obs_data_release(settings)
+    obs.obs_source_release(source)
+
     
     if False: #filter doesn't update on param change this way.
         source = obs.obs_get_source_by_name('Beat Saber Recursion')
