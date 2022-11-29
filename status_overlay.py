@@ -33,6 +33,9 @@ class Handler():
             ]
         self.events = sorted(self.events, key = lambda x: x[0])
         
+        self.outfile_base = time.strftime('%Y%d%m_%H%M%S')
+        self.outfile = f'{self.outfile_base}.txt'
+        
         print('Handler instantiated')
 
     def add_div(self):
@@ -53,13 +56,17 @@ class Handler():
         ['Training Content Decoder...', 5000],
         ['    Content Type: video, audio', 200],
         ['Identifying content...', 3000],
+
         ['    Sapient Subject Detected', 200],
         ['    Training Personality Model...', 200],
         ['        Gathering Training Set... ({300} s)', 300000],
         ['        Gathering Training Set... ', 100],
         ['        Complete', 200],
         ['        Training...', 5000],
+        ['    Definite Article Model Failed to Converge', 100],
         ['    Complete, Estimated Fitness 0.7852', 200],
+#        ['No subject detected. Checking other features...', 200],
+        
         ['    Non-causal entrypoint detected. Connecting...', 1000],
         ['       Notice: limited-bandwidth', 500],
         ['    Complete', 200],
@@ -68,6 +75,7 @@ class Handler():
         ['Displaying Transmission', 100],
         ]
         
+        #-23.9
         duration = sum([x[1] for x in lines])
         data = []
         offset = -duration
@@ -136,6 +144,28 @@ def script_unload():
     obs.timer_remove(do_tick)
 
 def script_load(settings):
+
+    source = obs.obs_get_source_by_name('Beat Saber Recursion')
+    filters = obs.obs_source_backup_filters(source)
+    filter = obs.obs_data_array_item(filters, 0)
+    
+    settings = obs.obs_data_get_obj(filter, 'settings')
+    
+    try:
+        pass
+        print(obs.obs_data_get_json(settings))
+        #obs.obs_data_set_int(settings, 'delay_ms', 10)
+        #obs.obs_data_set_double(settings, 'offset_x', 0*192+4*math.sin(time.time()))
+    except Exception as e:
+        #print(e)
+        pass
+        
+    obs.obs_data_release(settings)
+    
+    obs.obs_data_release(filter)
+    obs.obs_data_array_release(filters)
+    obs.obs_source_release(source)
+
     obs.timer_add(do_tick, 50)
 
 def script_description():
@@ -154,7 +184,11 @@ def do_tick():
     for msg in messages:
         try:
             kind = msg.get('kind', None)
-            if kind == 'new_map':
+            if kind == 'new_map': 
+                #TODO: determine when the map started relative to the start of the stream
+                #And write out timestamps to a file
+                
+                #TODO: receive map bpm and update the recursion filter delay length accordioningly
                 handler.add_div()
                 for line in msg['data']:
                     handler.add_line(line)
@@ -208,7 +242,8 @@ def do_tick():
         try:
             pass
             #print(obs.obs_data_get_double(settings, 'offset_x'))
-            obs.obs_data_set_double(settings, 'offset_x', 0*192+4*math.sin(time.time()))
+            #TODO: Figure out how to get this to actually update for real right now
+            obs.obs_data_set_int(settings, 'delay_ms', 420)
         except Exception as e:
             #print(e)
             pass

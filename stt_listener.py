@@ -1,6 +1,16 @@
 import speech_recognition as sr
         
 import ipc
+import re
+
+def filter_language(text):
+
+    text = re.sub(r'\bthe\b', '[ERROR]', text)
+
+    text = text.replace('  ', ' ')
+    text = text.replace(' .', '.')
+    
+    return text
 
 class STT():
     def __init__(self):
@@ -61,7 +71,10 @@ class STT():
                     print('Repeated sound')
                     continue
                 
+                result = filter_language(result)
+                
                 self.overlay.send_log(message = f'{conf*100:.0f} "{result}"', level= 'model')
+                
                 self.tts.send_stt(result)
                 
                 last_line = result
@@ -69,5 +82,6 @@ class STT():
                 print(f'Unexpected exception in listener: {e}')
         print(f'STT closing')
 
-stt = STT()
-stt.run()
+if __name__ == '__main__':
+    stt = STT()
+    stt.run()

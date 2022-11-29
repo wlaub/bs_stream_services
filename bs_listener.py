@@ -92,13 +92,17 @@ class Monitor(BaseMonitor):
         return lines
 
     def process_message(self, message):
+        with open('bs_listener_raw.txt', 'a') as fp:
+            fp.write(json.dumps(message)+',\n')
+        
         if message['_type'] == 'event':
             event = message['_event']
             if event == 'mapInfo':
                 info = message['mapInfoChanged']
                 if len(self.history) == 0 or info['level_id'] != self.history[-1]['level_id']:                    
                     lines = self.format_log(info)
-                    self.overlay.send_map(lines)
+                    self.overlay.send_map(lines) #TODO: Include when the map started in absolute time
+                    
 #                    self.overlay.send({'kind': 'new_map', 'data': lines})
                     self.history.append(info)    
 
